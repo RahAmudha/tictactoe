@@ -23,8 +23,9 @@ void Logger::FormatLogMsg(std::string msg, int level = 1){
 }
 
 void Logger::FormatGameOverMsg(int player, int outcome){
-    std::string result = (outcome) ? " Wins" : " Draws";
-    Logger::logMsg += _GetCurrentTime() + _GetLogLevel(4) + "Player " + std::to_string(player) + result;
+    std::string result = (outcome) ? " Wins" : "Draws";
+    std::string winning_player = (player != -1) ? std::to_string(player) : "";
+    Logger::logMsg += _GetCurrentTime() + _GetLogLevel(4) + "Player " + winning_player + result;
 }
 
 void Logger::TicTacToeLog(int player, ImVec2 position){

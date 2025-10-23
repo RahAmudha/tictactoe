@@ -63,6 +63,7 @@ namespace ClassGame {
                         game->setUpBoard();
                         gameOver = false;
                         gameWinner = -1;
+                        runOnce = true;
                     }
                 }
                 ImGui::End();

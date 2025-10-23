@@ -19,6 +19,7 @@ Icon?
 .Trashes
 
 # Ignore CMake generated files
+.cache/
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake

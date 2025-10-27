@@ -30,6 +30,7 @@ void Logger::FormatGameOverMsg(int player, int outcome){
 
 void Logger::TicTacToeLog(int player, ImVec2 position){
     char piece = '!';
+    bool isAi = false;
     switch (player){
         case 0:
             piece = 'O';
@@ -37,15 +38,17 @@ void Logger::TicTacToeLog(int player, ImVec2 position){
 
         case 1:
             piece = 'X';
+            isAi = true;
             break;
         
         default:
             break;
     }
 
+    std::string playerOrAI = (isAi) ? "Bot" : "Player " + std::to_string(player);
+
     // Taking position and dividing by 100 to get coords
-    Logger::logMsg += _GetCurrentTime() + _GetLogLevel(4) + "Player " + 
-    std::to_string(player) + " placed " + piece + " at "
+    Logger::logMsg += _GetCurrentTime() + _GetLogLevel(4) + playerOrAI + " placed " + piece + " at "
     + "(" + std::to_string(int(position.x)/100) + "," + std::to_string(int(position.y)/100) + ")";
 }
 

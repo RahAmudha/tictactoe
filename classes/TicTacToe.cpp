@@ -30,6 +30,10 @@ Logger& logger = Logger::GetInstance();
 const int AI_PLAYER   = 1;      // index of the AI player (O)
 const int HUMAN_PLAYER= 0;      // index of the human player (X)
 
+const int EMPTY = 0;            // constant for empty space
+const int HUMAN = 1;            // constant for player placed piece
+const int AI = 2;               // constant for AI placed piece
+
 TicTacToe::TicTacToe()
 {
 }
@@ -62,6 +66,7 @@ void TicTacToe::setUpBoard()
     // we will use the initHolder function on each square to do this
     // finally we should call startGame to get everything going
     Game::setNumberOfPlayers(2);
+    Game::setAIPlayer(AI_PLAYER);
 
     const int length = 3;
     const int width = 3;
@@ -153,7 +158,9 @@ Player* TicTacToe::ownerAt(int index ) const
 
     Bit *indexedBit = TicTacToe::_grid[y][x].bit();
 
-    return (!indexedBit) ? nullptr : indexedBit->getOwner(); // If the bit is not empty return the owner
+    if (!indexedBit)
+        return nullptr;
+    return indexedBit->getOwner();
 
     // index is 0..8, convert to x,y using:
     // y = index / 3
@@ -320,12 +327,106 @@ void TicTacToe::setStateString(const std::string &s)
     }
 }
 
+// After a lot of testing, I found out that playing moves manually for the AI uses a lot of computational resources
+// (I was messing with turning off some of the graphics to optimize compute, but I was running into multiple issues)
+// The best way seems to be creating a simulation board, which is the approach I followed below
 
-//
-// this is the function that will be called by the AI
-//
-void TicTacToe::updateAI() 
+// Helper recursive function for simulating negamax tree score computation
+int TicTacToe::negamaxSim(int board[9], int playerValue)
 {
-    // we will implement the AI in the next assignment!
+    // Early return for win
+    int winner = checkWinnerSim(board);
+    if (winner != -1) {
+        if (winner == playerValue) return 1;
+        else return -1;
+    }
+
+    // Early return for draw
+    bool draw = true;
+    for (int i = 0; i < 9; ++i) if (board[i] == EMPTY) draw = false;
+    if (draw) return 0;
+
+    // Continuing recursion otherwise
+    int best = -1000;
+
+    for (int i = 0; i < 9; ++i) {
+        if (board[i] == EMPTY) {
+            board[i] = playerValue;
+            int score = -negamaxSim(board, (playerValue == AI) ? HUMAN : AI);
+            board[i] = EMPTY;
+            if (score > best) best = score;
+        }
+    }
+
+    return best;
 }
+
+void TicTacToe::updateAI()
+{
+    // Skip if the user is playing
+    if (Game::getCurrentPlayer()->playerNumber() != AI_PLAYER)
+        return;
+
+    // Create temp board
+    int board[9];
+    for (int idx = 0; idx < 9; ++idx) {
+        Player* owner = ownerAt(idx);
+        if (!owner) board[idx] = EMPTY;
+        else board[idx] = (owner->playerNumber() == HUMAN_PLAYER) ? HUMAN : AI;
+    }
+
+    // Start scoring recursion
+    int bestScore = -1000;
+    int bestIndex = -1;
+
+    for (int idx = 0; idx < 9; ++idx) {
+        if (board[idx] == EMPTY) {
+            board[idx] = AI;
+            int score = -negamaxSim(board, HUMAN);
+            board[idx] = EMPTY;
+
+            if (score > bestScore) {
+                bestScore = score;
+                bestIndex = idx;
+            }
+        }
+    }
+
+    // Play resulting best move
+    if (bestIndex >= 0) {
+        int row = bestIndex / 3;
+        int col = bestIndex % 3;
+        BitHolder* target = &_grid[row][col];
+        if (actionForEmptyHolder(target)) {
+            Game::endTurn();
+        }
+    }
+}
+
+// Separate function from checkWinner since that uses ownerAt
+// No need to call that function since now we have a temp board - Saves a bit of compute and memory
+int TicTacToe::checkWinnerSim(int board[9])
+{
+    const int winningTriples[8][3] = {
+        {0,1,2},
+        {3,4,5},
+        {6,7,8},
+        {0,3,6},
+        {1,4,7},
+        {2,5,8},
+        {0,4,8},
+        {2,4,6},
+    };
+
+    for (int t = 0; t < 8; ++t) {
+        int a = winningTriples[t][0];
+        int b = winningTriples[t][1];
+        int c = winningTriples[t][2];
+        if (board[a] != EMPTY && board[a] == board[b] && board[b] == board[c])
+            return board[a];
+    }
+
+    return -1;
+}
+
 
